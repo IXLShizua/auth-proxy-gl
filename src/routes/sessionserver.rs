@@ -1,4 +1,6 @@
+use crate::launcher::types::response::base::profile::skin::metadata::Model;
 use crate::{
+    injector,
     injector::types::{
         request,
         response::{
@@ -9,16 +11,14 @@ use crate::{
             },
         },
     },
-    launcher,
-    state,
+    launcher, state,
 };
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{on, MethodFilter},
-    Json,
-    Router,
+    Json, Router,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
 use std::time::{self, SystemTime, UNIX_EPOCH};
@@ -107,8 +107,11 @@ fn transform_profile(
 ) -> profile::Profile {
     let skin = profile.assets.skin.map(|skin| skin::Skin {
         url: skin.url,
-        metadata: skin.metadata.map(|_| metadata::Metadata {
-            model: metadata::Model::Slim,
+        metadata: skin.metadata.and_then(|meta| match meta.model {
+            Model::Default => return None,
+            Model::Slim => Some(metadata::Metadata {
+                model: metadata::Model::Slim,
+            }),
         }),
     });
     let cape = profile.assets.cape.map(|cape| cape::Cape { url: cape.url });
